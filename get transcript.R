@@ -15,3 +15,10 @@ repair_encoding(x)
 # But it's better to start from scratch with correctly encoded file
 elections <- read_html(url, encoding = "UTF-8")
 elections %>% html_nodes("table") %>% .[[2]] %>% html_table() %>% .$TO
+
+html("http://www.sec.gov/litigation/suspensions.shtml") %>%
+  html_nodes("p+ table a") %>% html_attr(name="href")
+
+tocURL <-"http://www.presidency.ucsb.edu/debates.php"
+debateListRaw<- html(tocURL)
+t <- html_nodes(debateListRaw,"td table table tr") %>% html_attr(name="href")
