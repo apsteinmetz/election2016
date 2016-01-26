@@ -13,7 +13,9 @@ library("wordcloud")
 library("RColorBrewer")
 library("SnowballC")
 library(sentiment)
-
+library("stringr")
+library(xml2)
+library(data.table)
 
 
 #test
@@ -35,14 +37,72 @@ elections %>% html_nodes("table") %>% .[[2]] %>% html_table() %>% .$TO
 html("http://www.sec.gov/litigation/suspensions.shtml") %>%
   html_nodes("p+ table a") %>% html_attr(name="href")
 
+
+url <- "http://espn.go.com/golf/player/_/id/11/stuart-appleby"
+url %>% 
+  html %>% 
+  html_nodes(xpath='//li[contains(.,"Age")]') %>% 
+  html_text() %>% 
+  str_extract("[A-Z][a-z]{2,} [0-9]{1,2}, [0-9]{4}")
+
+
+#actual work. testing above
+
 tocURL <-"http://www.presidency.ucsb.edu/debates.php"
 debateListRaw<- html(tocURL)
 t <- html_nodes(debateListRaw,"table")[8]
-
 t2<-html_nodes(t,"table")
-html_nodes(t2,"a") %>%html_attr("href")
+html_table(t2[[2]],fill=T,trim=T)
+t3<-html_nodes(t2[[2]],"tr")
+
+debateListRaw%>%
+  html_nodes(xpath='//tr[contains(.,"Presidential Debate in")]')%>%
+  html_text()%>%  
+  str_extract("[A-Z][a-z]{2,} [0-9]{1,2}, [0-9]{4}")
+
+debateListRaw%>%
+  html_nodes(xpath='//tr[contains(.,"docdate")]')%>%
+  html_text()%>%  
+  str_extract("[A-Z][a-z]{2,} [0-9]{1,2}, [0-9]{4}")
+
+debateListRaw%>%
+  html_nodes(xpath='//tr[contains(.,"Republican Candidates")]')%>%
+  html_text()%>%  
+  str_extract("[A-Z][a-z]{2,} [0-9]{1,2}, [0-9]{4}")
+
+html_nodes(t2,"a")[1:16] %>%html_attr("href")
 
 xpathSApply(debateListRaw,"//td[@class='docdate']")
 xpathSApply(debateListRaw,"//td[@class='doctext']")
 xpathSApply(debateListRaw,"//span[@class='doctext']")
+
+# fill missing columns, and match by col names
+DT1 = data.table(A=1:3,B=letters[1:3])
+DT2 = data.table(B=letters[4:5],C=factor(1:2))
+l = list(DT1,DT2)
+rbindlist(l, use.names=TRUE, fill=TRUE)
+
+
+#now we're serious
+#-------------------------------------
+makeDebateList <- function(trow)
+  # parse dates and description plus transcript URL, if any
+  c(text=trow%>%html_nodes("td")%>%html_text, url=trow%>%html_nodes("a")%>%html_attr("href"))
+# -----------------------------------
+tocURL <-"http://www.presidency.ucsb.edu/debates.php"
+debateListRaw<- html(tocURL)
+
+#narrow down page to relevant table
+t <- html_nodes(debateListRaw,"table")[8]
+t2<-html_nodes(t,"tr")
+t3<-t2[4:length(t3)]
+
+# extract data elements
+debateList<-(lapply(t3,makeDebateList))
+startDate <- strptime("June 01,2015",format="%B %d, %Y")
+strptime(debateList[[167]][1],format="%B %d, %Y")
+
+#not working
+rbindlist(debateList,fill=TRUE)
+debateTable<-data.frame(date=NULL,description=NULL,url=NULL)
 
