@@ -99,8 +99,13 @@ t3<-t2[4:length(t3)]
 
 # extract data elements
 debateList<-(lapply(t3,makeDebateList))
+
+options(stringsAsFactors=F)
+t4<-  do.call("rbind.fill",lapply(lapply(debateList,t),as.data.frame))
+t5<-filter(t4,is.na(url)==FALSE)
+
 startDate <- strptime("June 01,2015",format="%B %d, %Y")
-strptime(debateList[[167]][1],format="%B %d, %Y")
+strptime(debateList[[166]][1],format="%B %d, %Y")
 
 #not working
 rbindlist(debateList,fill=TRUE)
